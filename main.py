@@ -1,6 +1,6 @@
 import torch
+import os
 import typing
-import numpy as np
 
 # utils
 def read_file(filepath: str) -> str:
@@ -21,13 +21,16 @@ def to_x_y_data(vector: typing.List[float], lookback: int) -> (torch.Tensor, tor
     return torch.Tensor(x), torch.Tensor(y)
 
 
-lookback = 30
-learning_rate = 0.1
-epochs = 100
+lookback = 130
+learning_rate = 0.005
+epochs = 600
 batch_size = 60
 
 # train data
-text = read_file("./data")
+text = ""
+for filename in os.listdir("data"):
+    filepath = os.path.join("data", filename)
+    text += read_file(filepath)
 x,y = None, None
 if True:
     vectorized = list(map(char_to_scaler, text))
@@ -44,14 +47,11 @@ class Model(torch.nn.Module):
         self.layer4 = torch.nn.Linear(60, 1)
     def forward(self, x):
         output = self.layer1(x)
-        output = torch.nn.functional.dropout(output, .1)
-        output = torch.nn.functional.relu(output)
+        output = torch.nn.functional.leaky_relu(output)
         output = self.layer2(output)
-        output = torch.nn.functional.dropout(output, .1)
-        output = torch.nn.functional.relu(output)
+        output = torch.nn.functional.leaky_relu(output)
         output = self.layer3(output)
-        output = torch.nn.functional.dropout(output, .1)
-        output = torch.nn.functional.relu(output)
+        output = torch.nn.functional.leaky_relu(output)
         output = self.layer4(output)
         return output
 
@@ -72,6 +72,8 @@ for epoch in range(epochs):
         optimizer.step()
         total_loss += loss.tolist()
     print(epoch, "/", epochs, "loss: ", total_loss)
+# save
+torch.save(textgen.state_dict(), "model")
     
 print("--------------------------")
 print("Generating")
